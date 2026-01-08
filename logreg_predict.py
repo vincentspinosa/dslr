@@ -98,37 +98,44 @@ def predict(
 
 def write_predictions(indices: List[int], houses: List[str], path: str) -> None:
     """Write predictions to a CSV file. """
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("Index,Hogwarts House\n")
-        for idx, house in zip(indices, houses):
-            f.write(f"{idx},{house}\n")
-
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("Index,Hogwarts House\n")
+            for idx, house in zip(indices, houses):
+                f.write(f"{idx},{house}\n")
+    except Exception as e:
+        print(f"Error writing predictions: {e}")
+        sys.exit(1)
 
 def main(argv: List[str]) -> None:
     if len(argv) != 3:
         print("Usage: python logreg_predict.py <test dataset> <weights file>")
         sys.exit(1)
 
-    test_path = argv[1]
-    weights_path = argv[2]
+    try:
+        test_path = argv[1]
+        weights_path = argv[2]
 
-    model = load_model(weights_path)
-    feature_names: List[str] = model["features"]
-    means: List[float] = model["means"]
-    stds: List[float] = model["stds"]
-    houses: List[str] = model["houses"]
-    weights: List[List[float]] = model["weights"]
+        model = load_model(weights_path)
+        feature_names: List[str] = model["features"]
+        means: List[float] = model["means"]
+        stds: List[float] = model["stds"]
+        houses: List[str] = model["houses"]
+        weights: List[List[float]] = model["weights"]
 
-    header, rows = read_dataset(test_path)
-    if not header:
-        print("Empty test dataset.")
+        header, rows = read_dataset(test_path)
+        if not header:
+            print("Empty test dataset.")
+            sys.exit(1)
+
+        # Transform rows into standardized feature vectors
+        X, indices = prepare_features(rows, feature_names, means, stds)
+        preds = predict(X, weights, houses)
+        write_predictions(indices, preds, path="houses.csv")
+        print("Predictions written to houses.csv")
+    except Exception as e:
+        print(f"An error occurred: {e}")
         sys.exit(1)
-
-    # Transform rows into standardized feature vectors
-    X, indices = prepare_features(rows, feature_names, means, stds)
-    preds = predict(X, weights, houses)
-    write_predictions(indices, preds, path="houses.csv")
-    print("Predictions written to houses.csv")
 
 
 if __name__ == "__main__":
