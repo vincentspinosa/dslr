@@ -1,5 +1,6 @@
 import json
 import math
+import random
 import sys
 from typing import List, Tuple
 
@@ -107,59 +108,139 @@ def sigmoid(z: float) -> float:
     return 1.0 / (1.0 + math.exp(-z))
 
 
+def _predict_single(w: List[float], xi: List[float]) -> float:
+    """Compute probability for a single example with current weights."""
+    z = w[0]
+    for j in range(len(xi)):
+        z += w[j + 1] * xi[j]
+    return sigmoid(z)
+
+
+def _train_batch(
+    X: List[List[float]],
+    y_binary: List[float],
+    learning_rate: float,
+    num_iterations: int,
+) -> List[float]:
+    """Batch gradient descent (full dataset per step)."""
+    m = len(X)
+    n_features = len(X[0])
+    w: List[float] = [0.0] * (n_features + 1)
+    for it in range(num_iterations):
+        print(f"Iteration {it} of {num_iterations}")
+        grad_bias = 0.0
+        grad: List[float] = [0.0] * n_features
+        for i in range(m):
+            xi = X[i]
+            error = _predict_single(w, xi) - y_binary[i]
+            grad_bias += error
+            for j in range(n_features):
+                grad[j] += error * xi[j]
+        grad_bias /= m
+        for j in range(n_features):
+            grad[j] /= m
+        w[0] -= learning_rate * grad_bias
+        for j in range(n_features):
+            w[j + 1] -= learning_rate * grad[j]
+    return w
+
+
+def _train_sgd(
+    X: List[List[float]],
+    y_binary: List[float],
+    learning_rate: float,
+    num_iterations: int,
+) -> List[float]:
+    """Stochastic gradient descent (one example per step)."""
+    m = len(X)
+    n_features = len(X[0])
+    w: List[float] = [0.0] * (n_features + 1)
+    for it in range(num_iterations):
+        print(f"Iteration {it} of {num_iterations}")
+        indices = list(range(m))
+        random.shuffle(indices)
+        for idx in indices:
+            xi = X[idx]
+            error = _predict_single(w, xi) - y_binary[idx]
+            w[0] -= learning_rate * error
+            for j in range(n_features):
+                w[j + 1] -= learning_rate * error * xi[j]
+    return w
+
+
+def _train_minibatch(
+    X: List[List[float]],
+    y_binary: List[float],
+    learning_rate: float,
+    num_iterations: int,
+    batch_size: int,
+) -> List[float]:
+    """Mini-batch gradient descent (subset per step)."""
+    m = len(X)
+    n_features = len(X[0])
+    w: List[float] = [0.0] * (n_features + 1)
+    batch_size = max(1, min(batch_size, m))
+    for it in range(num_iterations):
+        print(f"Iteration {it} of {num_iterations}")
+        indices = list(range(m))
+        random.shuffle(indices)
+        for start in range(0, m, batch_size):
+            batch_idx = indices[start : start + batch_size]
+            b_len = len(batch_idx)
+            grad_bias = 0.0
+            grad: List[float] = [0.0] * n_features
+            for idx in batch_idx:
+                xi = X[idx]
+                error = _predict_single(w, xi) - y_binary[idx]
+                grad_bias += error
+                for j in range(n_features):
+                    grad[j] += error * xi[j]
+            grad_bias /= b_len
+            for j in range(n_features):
+                grad[j] /= b_len
+            w[0] -= learning_rate * grad_bias
+            for j in range(n_features):
+                w[j + 1] -= learning_rate * grad[j]
+    return w
+
+
 def train_one_vs_all(
     X: List[List[float]],
     y: List[int],
     num_classes: int,
     learning_rate: float = 0.1,
     num_iterations: int = 1000,
+    algorithm: str = "batch",
+    batch_size: int = 32,
 ) -> List[List[float]]:
     """
-    Train a one-vs-all logistic regression classifier using batch gradient descent.
+    Train a one-vs-all logistic regression classifier using the selected algorithm.
 
-    For each class k (each house), we fit a binary classifier:
-        y_k = 1 if y == k else 0
-    and learn a weight vector [bias, w1, ..., wd].
-
-    Returns:
-        weights: list of weight vectors, one per class.
+    Supported algorithms:
+        - "batch": full batch gradient descent
+        - "sgd": stochastic gradient descent
+        - "minibatch": mini-batch gradient descent
     """
     m = len(X)
     if m == 0:
         raise ValueError("Empty feature matrix.")
-    n_features = len(X[0])  # dimensionality of each feature vector (number of course features)
+    n_features = len(X[0])
 
-    # Initialize weights for each class: one bias + one weight per feature
-    weights: List[List[float]] = [
-        [0.0] * (n_features + 1) for _ in range(num_classes)  # Create weight vector [bias, w1, w2, ...] for each class, initialized to zeros
-    ]
+    weights: List[List[float]] = [[0.0] * (n_features + 1) for _ in range(num_classes)]
 
-    for k in range(num_classes):  # Train a binary classifier for each house (one-vs-all)
-        w = weights[k]
-        for iteration in range(num_iterations):  # Gradient descent
-            print(f"Iteration {iteration} of {num_iterations} of class {k}")
-            grad_bias = 0.0
-            grad: List[float] = [0.0] * n_features
-            for i in range(m): # Loop through each training example (student)
-                xi = X[i] # Get the feature vector for student i
-                yi = 1.0 if y[i] == k else 0.0 # one-vs-all target for class k (1 if student belongs to house k, else 0)
-                z = w[0] # Initialize z to bias
-                for j in range(n_features):
-                    z += w[j + 1] * xi[j] # Multiply feature value by its weight and add to z
-                probability = sigmoid(z) # Apply sigmoid to get probability in [0, 1]
-                error = probability - yi
-                grad_bias += error # Accumulate gradient for bias term
-                for j in range(n_features):  # Accumulate gradient for each feature weight
-                    grad[j] += error * xi[j]  # Gradient for weight j is error times feature j value
-
-            # Average the gradients and apply gradient descent step
-            grad_bias /= m  # Average the bias gradient
-            for j in range(n_features):  # Average each feature gradient
-                grad[j] /= m
-
-            w[0] -= learning_rate * grad_bias
-            for j in range(n_features):
-                w[j + 1] -= learning_rate * grad[j]
+    algorithm = algorithm.lower()
+    for k in range(num_classes):
+        y_binary = [1.0 if label == k else 0.0 for label in y]
+        if algorithm == "batch":
+            weights[k] = _train_batch(X, y_binary, learning_rate, num_iterations)
+        elif algorithm == "sgd":
+            weights[k] = _train_sgd(X, y_binary, learning_rate, num_iterations)
+        elif algorithm == "minibatch" or algorithm == "mini-batch":
+            weights[k] = _train_minibatch(
+                X, y_binary, learning_rate, num_iterations, batch_size
+            )
+        else:
+            raise ValueError(f"Unknown training algorithm: {algorithm}")
 
     return weights
 
@@ -193,8 +274,26 @@ def main(argv: List[str]) -> None:
 
     try:
         train_path = argv[1]
+        algorithm = input(
+            "Select training algorithm [batch | sgd | minibatch]: "
+        ).strip()
+        if algorithm == "":
+            algorithm = "batch"
+
+        batch_size = 32
+        if algorithm.lower() in {"minibatch", "mini-batch"}:
+            user_batch = input("Mini-batch size (default 32): ").strip()
+            if user_batch.isdigit() and int(user_batch) > 0:
+                batch_size = int(user_batch)
+
         X, y, means, stds = prepare_dataset(train_path)
-        weights = train_one_vs_all(X, y, len(HOUSES))
+        weights = train_one_vs_all(
+            X,
+            y,
+            len(HOUSES),
+            algorithm=algorithm,
+            batch_size=batch_size,
+        )
         save_model(weights, means, stds, "weights.json")
         print("Training completed. Weights saved to weights.json")
 
