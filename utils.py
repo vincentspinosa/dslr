@@ -2,8 +2,6 @@ import csv
 import describe_helpers as dh
 from typing import Dict, List, Tuple
 
-from describe import compute_column_stats
-
 
 def is_float(value: str) -> bool:
     """True if value can be converted to a float, False otherwise."""
