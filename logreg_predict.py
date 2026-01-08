@@ -15,7 +15,7 @@ def sigmoid(z: float) -> float:
     return 1.0 / (1.0 + math.exp(-z))
 
 
-def load_model(path: str) -> Dict:
+def load_model_json(path: str) -> Dict:
     """Load the JSON model file."""
     try: 
         with open(path, "r", encoding="utf-8") as f:
@@ -116,7 +116,7 @@ def main(argv: List[str]) -> None:
         test_path = argv[1]
         weights_path = argv[2]
 
-        model = load_model(weights_path)
+        model = load_model_json(weights_path)
         feature_names: List[str] = model["features"]
         means: List[float] = model["means"]
         stds: List[float] = model["stds"]
