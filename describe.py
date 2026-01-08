@@ -20,7 +20,7 @@ def main():
     """Program providing statistical information about dataframe's numerical columns."""
     try:
         if len(sys.argv) != 2:
-            raise AssertionError("Need one argument.")
+            raise AssertionError("Usage: python describe.py <training dataset>")
         else:
             tab = {}
             df = pd.read_csv(sys.argv[1])
