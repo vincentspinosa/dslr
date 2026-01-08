@@ -1,5 +1,8 @@
 import csv
+import describe_helpers as dh
 from typing import Dict, List, Tuple
+
+from describe import compute_column_stats
 
 
 def is_float(value: str) -> bool:
@@ -25,9 +28,10 @@ def compute_stats(values: List[float]) -> Dict[str, float]:
     stats["mean"] = sum(sorted_vals) / n
     stats["std"] = (sum((x - stats["mean"]) ** 2 for x in sorted_vals) / n) ** 0.5
     stats["min"] = sorted_vals[0]
-    stats["25%"] = sorted_vals[int(n * 0.25)]
-    stats["50%"] = sorted_vals[int(n * 0.5)]
-    stats["75%"] = sorted_vals[int(n * 0.75)]
+    q1, q3 = dh.quartile_(values)
+    stats["25%"] = q1
+    stats["50%"] = dh.median_(values)
+    stats["75%"] = q3
     stats["max"] = sorted_vals[-1]
 
     return stats
