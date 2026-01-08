@@ -14,26 +14,23 @@ def median_(args):
         return s_args[m]
 
 
-def quantile_linear_(sorted_vals, p):
+def quartile_linear_(sorted_vals, p):
     """Uses linear interpolation to find the exact quartile."""
     n = len(sorted_vals)
     if n == 0:
         return float('nan')
-    # position in 1-based indexing: 1 + p*(n - 1)
-    pos = 1 + p * (n - 1)
-    # convert to 0-based index
-    idx = pos - 1
-    lower = int(idx)          # floor
+    idx = p * (n - 1)
+    lower = int(idx)
     upper = min(lower + 1, n - 1)
-    frac = idx - lower        # fractional part
-    return sorted_vals[lower] + frac * (sorted_vals[upper] - sorted_vals[lower])
+    fractional_part = idx - lower
+    return sorted_vals[lower] + (fractional_part * (sorted_vals[upper] - sorted_vals[lower]))
 
 
 def quartile_(args):
     """Returns a list with quartiles 1 and 3."""
     s_args = sorted(args)
-    q1 = quantile_linear_(s_args, 0.25)
-    q3 = quantile_linear_(s_args, 0.75)
+    q1 = quartile_linear_(s_args, 0.25)
+    q3 = quartile_linear_(s_args, 0.75)
     return [float(q1), float(q3)]
 
 
