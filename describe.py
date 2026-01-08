@@ -58,6 +58,7 @@ def main():
                 "max",
                 "range"
             ]
+            pd.set_option('display.float_format', '{:.2f}'.format)
             print(df_result)
     except Exception as e:
         print(f"{type(e).__name__}: {e}")
