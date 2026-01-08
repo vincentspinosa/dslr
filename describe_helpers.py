@@ -30,6 +30,7 @@ def quantile_linear_(sorted_vals, p):
 
 
 def quartile_(args):
+    """Returns a list with quartiles 1 and 3."""
     s_args = sorted(args)
     q1 = quantile_linear_(s_args, 0.25)
     q3 = quantile_linear_(s_args, 0.75)
