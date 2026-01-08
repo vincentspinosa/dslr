@@ -9,7 +9,7 @@ def compute_column_stats(df_column):
     missing = len(df_column) - len(column)
     count = len(column)
     mean = dh.mean_(column)
-    qrtl1, qrtl2 = dh.quartile_(column)
+    qrtl1, qrtl3 = dh.quartile_(column)
     std = dh.std_(column)
     min = dh.min_(column)
     max = dh.max_(column)
@@ -25,7 +25,7 @@ def compute_column_stats(df_column):
         min,
         qrtl1,
         median,
-        qrtl2,
+        qrtl3,
         max,
         value_range
     ]
