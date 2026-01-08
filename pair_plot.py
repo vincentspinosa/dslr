@@ -144,7 +144,11 @@ def main(argv: List[str]) -> None:
     if len(argv) != 2:
         print("Usage: python pair_plot.py <dataset_train.csv>")
         sys.exit(1)
-    plot_pair_matrix(argv[1])
+    try:
+        plot_pair_matrix(argv[1])
+    except Exception as e:
+        print(f"Error plotting pair matrix: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
