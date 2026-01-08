@@ -26,26 +26,7 @@ This project implements a one-vs-all logistic regression classifier to predict H
 cd dslr
 
 # Install required packages (if not already installed)
-pip install pandas matplotlib
-```
-
-## Project Structure
-
-```
-dslr/
-├── logreg_train.py          # Train logistic regression model
-├── logreg_predict.py        # Make predictions on test data
-├── describe.py              # Generate statistical summary of dataset
-├── evaluate.py              # Evaluate prediction accuracy
-├── histogram.py             # Generate histograms for features
-├── scatter_plot.py          # Generate scatter plots
-├── pair_plot.py             # Generate pair plots
-├── utils.py                 # Utility functions (CSV reading, stats)
-├── describe_helpers.py       # Statistical helper functions
-├── dataset_train.csv         # Training dataset
-├── dataset_test.csv         # Test dataset
-├── dataset_truth.csv         # Ground truth labels for evaluation
-└── weights.json             # Saved model weights (generated after training)
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -84,9 +65,9 @@ python logreg_train.py dataset_train.csv
 ```
 
 The program will prompt you to select a training algorithm:
-- **batch** (default): Full batch gradient descent - uses entire dataset per iteration
-- **sgd**: Stochastic gradient descent - uses one example per iteration
-- **minibatch**: Mini-batch gradient descent - uses a subset of examples per iteration
+- **batch** (default): Full batch gradient descent - updates bias and weights after iterating on the whole dataset
+- **sgd**: Stochastic gradient descent - updates bias and weights after each data row computed
+- **minibatch**: Mini-batch gradient descent - updates bias and weights after iterating on subsets of the dataset
 
 For mini-batch, you'll also be prompted to specify the batch size (default: 32).
 
