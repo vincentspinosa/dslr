@@ -1,7 +1,7 @@
 import json
 import math
 import sys
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 from utils import compute_stats, is_float, read_dataset
 
@@ -178,8 +178,12 @@ def save_model(
         "houses": HOUSES,
         "weights": weights,
     }
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(model, f, indent=4)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(model, f, indent=4)
+    except Exception as e:
+        print(f"{type(e).__name__}: {e}")
+        sys.exit(1)
 
 
 def main(argv: List[str]) -> None:
@@ -187,11 +191,16 @@ def main(argv: List[str]) -> None:
         print("Usage: python logreg_train.py <training_dataset.csv>")
         sys.exit(1)
 
-    train_path = argv[1]
-    X, y, means, stds = prepare_dataset(train_path)
-    weights = train_one_vs_all(X, y, len(HOUSES))
-    save_model(weights, means, stds, "weights.json")
-    print("Training completed. Weights saved to weights.json")
+    try:
+        train_path = argv[1]
+        X, y, means, stds = prepare_dataset(train_path)
+        weights = train_one_vs_all(X, y, len(HOUSES))
+        save_model(weights, means, stds, "weights.json")
+        print("Training completed. Weights saved to weights.json")
+
+    except Exception as e:
+        print(f"{type(e).__name__}: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
