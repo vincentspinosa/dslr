@@ -40,9 +40,9 @@ def compute_pearson(x: List[float], y: List[float]) -> float:
     direction of a linear relationship** between two variables X and Y.
 
     r is always in [-1, 1]:
-        - r ≈  1  → strong positive linear relationship,
-        - r ≈ -1  → strong negative linear relationship,
-        - r ≈  0  → little or no linear relationship.
+        - r ≈  1  -> strong positive linear relationship,
+        - r ≈ -1  -> strong negative linear relationship,
+        - r ≈  0  -> little or no linear relationship.
     """
     if len(x) == 0 or len(x) != len(y):
         # If there are no values, or the lists are misaligned, return 0 by convention.
