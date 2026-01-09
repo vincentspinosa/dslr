@@ -47,13 +47,12 @@ def compute_pearson(x: List[float], y: List[float]) -> float:
     if len(x) == 0 or len(x) != len(y):
         # If there are no values, or the lists are misaligned, return 0 by convention.
         return 0.0
-    # Use our manual stats function for means and standard deviations
     stats_x = compute_stats_as_dict(x)  # contains mean and std for X values
     stats_y = compute_stats_as_dict(y)  # contains mean and std for Y values
-    mean_x = stats_x["mean"]  # mean of X
-    mean_y = stats_y["mean"]  # mean of Y
-    std_x = stats_x["std"]  # standard deviation of X
-    std_y = stats_y["std"]  # standard deviation of Y
+    mean_x = stats_x["mean"]
+    mean_y = stats_y["mean"]
+    std_x = stats_x["std"]
+    std_y = stats_y["std"]
     if std_x == 0 or std_y == 0:
         # If one std is 0 -> correlation is undefined,
         # and we treat it as 0 because there is no variation to correlate.
@@ -74,8 +73,7 @@ def compute_pearson(x: List[float], y: List[float]) -> float:
 def plot_best_pair(path: str) -> None:
     """
     Find the pair of features with the largest Pearson correlation using pandas,
-    print the pair and its correlation, and display a scatter plot colored
-    by house.
+    print the pair and its correlation, and display a scatter plot colored by house.
     """
     try:
         df = pd.read_csv(path)
@@ -87,10 +85,11 @@ def plot_best_pair(path: str) -> None:
         print("Empty dataset.")
         return
 
-    # Keep only numeric course columns and drop rows where both values are NaN
+    # Keep only numeric course columns and drop rows where values are NaN
     numeric_df = df[COURSE_COLUMNS].apply(pd.to_numeric, errors="coerce")
+    numeric_df = numeric_df.dropna(how="all")
 
-    # Best feature pair and correlation score found so far
+    # Init best feature pair and correlation score
     best_c1 = ""
     best_c2 = ""
     best_r = 0.0
@@ -119,7 +118,7 @@ def plot_best_pair(path: str) -> None:
         f"(Pearson r = {best_r:.4f})"
     )
 
-    # Build per-house coordinates for plotting using pandas filtering
+    # Build per-house coordinates for plotting
     house_points: Dict[str, Tuple[List[float], List[float]]] = {
         house: ([], []) for house in HOUSES_COLORS.keys()
     }
@@ -129,11 +128,7 @@ def plot_best_pair(path: str) -> None:
         print("Column 'Hogwarts House' not found in dataset.")
         return
 
-    # Use numeric data for the chosen best pair
     pair_df = df[["Hogwarts House", best_c1, best_c2]].copy()
-    pair_df[best_c1] = pd.to_numeric(pair_df[best_c1], errors="coerce")
-    pair_df[best_c2] = pd.to_numeric(pair_df[best_c2], errors="coerce")
-    pair_df = pair_df.dropna(subset=[best_c1, best_c2])
 
     for house in HOUSES_COLORS.keys():
         subset = pair_df[pair_df["Hogwarts House"] == house]
