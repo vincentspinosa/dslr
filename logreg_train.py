@@ -58,6 +58,12 @@ def prepare_dataset(
     if df.empty:
         raise ValueError("No labeled rows found in training dataset.")
 
+    if "Care of Magical Creatures" in df.columns:
+        df = df.drop(columns=["Care of Magical Creatures"])
+
+    if "Arithmancy" in df.columns:
+        df = df.drop(columns=["Arithmancy"])
+
     # Ensure all course columns exist and are numeric (non-numeric -> NaN)
     for col in COURSE_COLUMNS:
         if col in df.columns:

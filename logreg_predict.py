@@ -143,6 +143,12 @@ def main(argv: List[str]) -> None:
             print("Empty test dataset.")
             sys.exit(1)
 
+        if "Care of Magical Creatures" in df.columns:
+            df = df.drop(columns=["Care of Magical Creatures"])
+
+        if "Arithmancy" in df.columns:
+            df = df.drop(columns=["Arithmancy"])
+
         # Transform rows into standardized feature vectors
         X, indices = prepare_features(df, feature_names, means, stds)
         preds = predict(X, weights, houses)
