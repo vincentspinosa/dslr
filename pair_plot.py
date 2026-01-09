@@ -145,7 +145,6 @@ def plot_pair_matrix(path: str) -> None:
     )
 
     fig.suptitle("Pair plot of Hogwarts course scores", fontsize=14)
-
     fig.tight_layout(rect=[0, 0.05, 0.98, 0.97])
     plt.show()
 
