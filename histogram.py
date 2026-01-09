@@ -47,7 +47,6 @@ def load_course_scores(path: str) -> Optional[Dict[str, Dict[str, List[float]]]]
     if df.empty:
         return None
 
-    # Filter to only rows with valid houses
     df = df[df["Hogwarts House"].isin(HOUSES)]
     
     if df.empty:
@@ -62,11 +61,8 @@ def load_course_scores(path: str) -> Optional[Dict[str, Dict[str, List[float]]]]
         if course not in df.columns:
             continue
         for house in HOUSES:
-            # Filter by house and get numeric values for this course
             house_data = df[df["Hogwarts House"] == house][course]
-            # Drop NaN values and convert to list
             numeric_values = house_data.dropna().tolist()
-            # Filter out any remaining non-numeric values (shouldn't happen but safety check)
             data[course][house] = [v for v in numeric_values if isinstance(v, (int, float))]
     
     return data
@@ -79,7 +75,7 @@ def plot_histograms(path: str) -> None:
         print("No data to plot.")
         return
 
-    num_courses = 13
+    num_courses = len(COURSE_COLUMNS)
     ncols = 4
     nrows = 4
     fig, axes = plt.subplots(nrows, ncols, figsize=(16, 12))
@@ -93,7 +89,6 @@ def plot_histograms(path: str) -> None:
         for house, color in HOUSES_COLORS.items():
             values = data[course][house]
             if not values:
-                # If no scores for this house in this course, skip
                 continue
             ax.hist(
                 values,
