@@ -1,5 +1,4 @@
 import sys
-import math
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
@@ -56,7 +55,7 @@ def compute_pearson(x: List[float], y: List[float]) -> float:
     std_x = stats_x["std"]  # standard deviation of X
     std_y = stats_y["std"]  # standard deviation of Y
     if std_x == 0 or std_y == 0:
-        # If one std is 0 → correlation is undefined,
+        # If one std is 0 -> correlation is undefined,
         # and we treat it as 0 because there is no variation to correlate.
         return 0.0
 
