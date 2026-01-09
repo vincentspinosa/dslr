@@ -43,19 +43,19 @@ def build_clean_rows(path: str) -> List[Dict[str, float | None]]:
     if df.empty:
         return []
 
-    # Coerce course columns to numeric, leaving NaN for invalid/missing values
+    # Coerce course columns to numeric, drop missing values
     for col in COURSE_COLUMNS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
         else:
             df[col] = float("nan")
+        df[col] = df[col].dropna()
 
     clean_rows: List[Dict[str, float | None]] = []
     for _, row in df.iterrows():
         parsed: Dict[str, float | None] = {"Hogwarts House": row["Hogwarts House"]}
         for col in COURSE_COLUMNS:
-            val = row[col]
-            parsed[col] = None if pd.isna(val) else float(val)
+            parsed[col] = float(row[col])
         clean_rows.append(parsed)
 
     return clean_rows
