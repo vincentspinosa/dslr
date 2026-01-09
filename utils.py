@@ -1,18 +1,68 @@
-import csv
-import describe_helpers as dh
-from typing import Dict, List, Tuple
+from typing import List, Dict
 
 
-def is_float(value: str) -> bool:
-    """True if value can be converted to a float, False otherwise."""
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
+def mean_(args):
+    """Function returning the mean of a list of arguments."""
+    return sum(args) / len(args)
 
 
-def compute_stats(values: List[float]) -> Dict[str, float]:
+def median_(args):
+    """Function returning the median of a list of arguments."""
+    s_args = sorted(args)
+    l = len(s_args)
+    m = l // 2
+    if l % 2 == 0:
+        return (s_args[m] + s_args[m - 1]) / 2
+    else:
+        return s_args[m]
+
+
+def quartile_linear_(sorted_vals, p):
+    """Uses linear interpolation to find the exact quartile."""
+    n = len(sorted_vals)
+    if n == 0:
+        return float('nan')
+    idx = p * (n - 1)
+    lower = int(idx)
+    upper = min(lower + 1, n - 1)
+    fractional_part = idx - lower
+    return sorted_vals[lower] + (fractional_part * (sorted_vals[upper] - sorted_vals[lower]))
+
+
+def quartile_(args):
+    """Returns a list with quartiles 1 and 3."""
+    s_args = sorted(args)
+    q1 = quartile_linear_(s_args, 0.25)
+    q3 = quartile_linear_(s_args, 0.75)
+    return [float(q1), float(q3)]
+
+
+def std_(args):
+    """Function returning the standard deviation of a list of arguments."""
+    m = mean_(args)
+    variance = sum([(x - m) ** 2 for x in args]) / len(args)
+    return variance ** 0.5
+
+
+def min_(args):
+    """Function returning the minimum value of a list of arguments."""
+    x = float('inf')
+    for value in args:
+        if value < x:
+            x = value
+    return x
+
+
+def max_(args):
+    """Function returning the maximum value of a list of arguments."""
+    x = float('-inf')
+    for value in args:
+        if value > x:
+            x = value
+    return x
+
+
+def compute_stats_as_dict(values: List[float]) -> Dict[str, float]:
     """Compute basic descriptive statistics for a list of numbers."""
     n = len(values)
     stats: Dict[str, float] = {}
@@ -20,34 +70,14 @@ def compute_stats(values: List[float]) -> Dict[str, float]:
     if n == 0:
         return stats
 
-    sorted_vals = sorted(values)
-
     stats["count"] = float(n)
-    stats["mean"] = sum(sorted_vals) / n
-    stats["std"] = (sum((x - stats["mean"]) ** 2 for x in sorted_vals) / n) ** 0.5
-    stats["min"] = sorted_vals[0]
-    q1, q3 = dh.quartile_(values)
+    stats["mean"] = mean_(values)
+    stats["std"] = std_(values)
+    stats["min"] = min_(values)
+    q1, q3 = quartile_(values)
     stats["25%"] = q1
-    stats["50%"] = dh.median_(values)
+    stats["50%"] = median_(values)
     stats["75%"] = q3
-    stats["max"] = sorted_vals[-1]
+    stats["max"] = max_(values)
 
     return stats
-
-
-def read_dataset(path: str) -> Tuple[List[str], List[Dict[str, str]]]:
-    """Read a CSV file and return the header and rows."""
-    with open(path, newline="", encoding="utf-8") as f:
-        try:
-            reader = csv.reader(f)
-            header = next(reader)
-        except Exception:
-            return [], []
-
-        rows: List[Dict[str, str]] = []
-        for row in reader:
-            if not row or len(row) != len(header):
-                continue
-            # append a dictionary containing the header as keys and the rows values as values
-            rows.append({header[i]: row[i] for i in range(len(header))})
-    return header, rows

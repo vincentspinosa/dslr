@@ -4,7 +4,9 @@ import random
 import sys
 from typing import List, Tuple
 
-from utils import compute_stats, is_float, read_dataset
+import pandas as pd
+
+from utils import compute_stats_as_dict
 
 COURSE_COLUMNS: List[str] = [
     "Arithmancy",
@@ -40,55 +42,62 @@ def prepare_dataset(
     - y: list of integer house indices (0..3)
     - means, stds: per-feature statistics used for standardization
     """
-    header, rows = read_dataset(path)
-    if not header:
+    try:
+        df = pd.read_csv(path)
+    except Exception as e:
+        raise ValueError(f"Could not read training dataset: {e}")
+
+    if df.empty:
         raise ValueError("Empty training dataset.")
 
-    # Raw feature values per feature index (for computing means/stds)
-    raw_features: List[List[float]] = [[] for _ in COURSE_COLUMNS]  # Initialize empty list per feature to collect numeric values
-    labels: List[int] = []  # List to store integer house labels (0, 1, 2, or 3)
+    if "Hogwarts House" not in df.columns:
+        raise ValueError("Column 'Hogwarts House' not found in training dataset.")
 
-    for row in rows:
-        house = row.get("Hogwarts House", "")
-        if house not in HOUSES:
-            continue
-        labels.append(HOUSES.index(house))
-
-        for j, col in enumerate(COURSE_COLUMNS):
-            val = row.get(col, "").strip()
-            if val == "" or not is_float(val):
-                continue
-            raw_features[j].append(float(val))
-
-    if not labels:
+    # Keep only rows with a known house label
+    df = df[df["Hogwarts House"].isin(HOUSES)].copy()
+    if df.empty:
         raise ValueError("No labeled rows found in training dataset.")
+
+    # Ensure all course columns exist and are numeric (non-numeric -> NaN)
+    for col in COURSE_COLUMNS:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        else:
+            df[col] = float("nan")
+
+    # Labels as integer indices 0..3
+    labels: List[int] = [HOUSES.index(h) for h in df["Hogwarts House"]]
+
+    # Raw feature values per feature index (for computing means/stds)
+    raw_features: List[List[float]] = [[] for _ in COURSE_COLUMNS]
+    for j, col in enumerate(COURSE_COLUMNS):
+        col_values = df[col].dropna().tolist()
+        raw_features[j] = [float(v) for v in col_values]
 
     means: List[float] = []
     stds: List[float] = []
     for j in range(len(COURSE_COLUMNS)):
-        stats = compute_stats(raw_features[j])
+        stats = compute_stats_as_dict(raw_features[j])
         mean = stats.get("mean", 0.0)
         std = stats.get("std", 1.0)
         if std == 0.0:
             std = 1.0
         means.append(mean)
         stds.append(std)
-    
-    X: List[List[float]] = [] # List to store standardized feature vectors (one per student)
-    for row in rows:
-        house = row.get("Hogwarts House", "")
-        if house not in HOUSES:
-            continue
-        features: List[float] = [] # Initialize empty list for this student's feature vector
+
+    # Build standardized feature matrix X
+    X: List[List[float]] = []
+    for _, row in df.iterrows():
+        features: List[float] = []
         for j, col in enumerate(COURSE_COLUMNS):
-            val = row.get(col, "").strip()
-            if val == "" or not is_float(val):
+            val = row[col]
+            if pd.isna(val):
                 v = means[j]
             else:
                 v = float(val)
             # Standardize: (x - mean) / std
-            features.append((v - means[j]) / stds[j])  # Apply z-score normalization and add to feature vector
-        X.append(features)  # Add this student's complete feature vector to the dataset
+            features.append((v - means[j]) / stds[j])
+        X.append(features)
 
     return X, labels, means, stds  # Return standardized features, labels, and statistics for later use
 

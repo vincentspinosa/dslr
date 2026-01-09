@@ -3,7 +3,7 @@ import math
 import sys
 from typing import Dict, List, Tuple
 
-from utils import is_float, read_dataset
+import pandas as pd
 
 
 def sigmoid(z: float) -> float:
@@ -26,7 +26,7 @@ def load_model_json(path: str) -> Dict:
 
 
 def prepare_features(
-    rows: List[Dict[str, str]],
+    df: "pd.DataFrame",
     feature_names: List[str],
     means: List[float],
     stds: List[float],
@@ -40,19 +40,33 @@ def prepare_features(
         * replace missing values by the training mean,
         * standardize the value with training mean and std.
     """
-    X: List[List[float]] = []
-    indices: List[int] = []
-    for row in rows:
-        index_str = row.get("Index", "").strip()
-        if index_str == "" or not index_str.isdigit():
-            continue
-        idx = int(index_str)
-        indices.append(idx)
+    if "Index" not in df.columns:
+        raise ValueError("Column 'Index' not found in test dataset.")
 
+    df = df.copy()
+
+    # Keep only rows with a valid numeric Index
+    df["Index"] = pd.to_numeric(df["Index"], errors="coerce")
+    df = df.dropna(subset=["Index"])
+    if df.empty:
+        raise ValueError("No valid indices found in test dataset.")
+    df["Index"] = df["Index"].astype(int)
+
+    # Ensure all feature columns exist and are numeric
+    for j, col in enumerate(feature_names):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        else:
+            df[col] = float("nan")
+
+    X: List[List[float]] = []
+    indices: List[int] = df["Index"].tolist()
+
+    for _, row in df.iterrows():
         features: List[float] = []
         for j, col in enumerate(feature_names):
-            val = row.get(col, "").strip()
-            if val == "" or not is_float(val):
+            val = row[col]
+            if pd.isna(val):
                 v = means[j]
             else:
                 v = float(val)
@@ -60,6 +74,7 @@ def prepare_features(
             # Apply the same standardization as in training
             features.append((v - means[j]) / std)
         X.append(features)
+
     return X, indices
 
 
@@ -123,13 +138,13 @@ def main(argv: List[str]) -> None:
         houses: List[str] = model["houses"]
         weights: List[List[float]] = model["weights"]
 
-        header, rows = read_dataset(test_path)
-        if not header:
+        df = pd.read_csv(test_path)
+        if df.empty:
             print("Empty test dataset.")
             sys.exit(1)
 
         # Transform rows into standardized feature vectors
-        X, indices = prepare_features(rows, feature_names, means, stds)
+        X, indices = prepare_features(df, feature_names, means, stds)
         preds = predict(X, weights, houses)
         write_predictions(indices, preds, path="houses.csv")
         print("Predictions written to houses.csv")

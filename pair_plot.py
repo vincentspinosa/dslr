@@ -2,8 +2,7 @@ import sys
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
-
-from utils import is_float, read_dataset
+import pandas as pd
 
 COURSE_COLUMNS: List[str] = [
     "Arithmancy",
@@ -30,24 +29,35 @@ HOUSES_COLORS: Dict[str, str] = {
 
 
 def build_clean_rows(path: str) -> List[Dict[str, float | None]]:
-    """Read the CSV and normalize each row into a structure convenient for plotting."""
-    header, rows = read_dataset(path)
-    if not header:
+    """Read the CSV with pandas and normalize each row into a structure convenient for plotting."""
+    try:
+        df = pd.read_csv(path)
+    except Exception:
         return []
 
-    clean_rows = []
-    for row in rows:
-        house = row.get("Hogwarts House", "")
-        if house not in HOUSES_COLORS:
-            continue
-        parsed = {"Hogwarts House": house}
+    if df.empty or "Hogwarts House" not in df.columns:
+        return []
+
+    # Keep only rows for known houses
+    df = df[df["Hogwarts House"].isin(HOUSES_COLORS.keys())]
+    if df.empty:
+        return []
+
+    # Coerce course columns to numeric, leaving NaN for invalid/missing values
+    for col in COURSE_COLUMNS:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        else:
+            df[col] = float("nan")
+
+    clean_rows: List[Dict[str, float | None]] = []
+    for _, row in df.iterrows():
+        parsed: Dict[str, float | None] = {"Hogwarts House": row["Hogwarts House"]}
         for col in COURSE_COLUMNS:
-            val = row.get(col, "").strip()
-            if val == "" or not is_float(val):
-                parsed[col] = None
-            else:
-                parsed[col] = float(val)
+            val = row[col]
+            parsed[col] = None if pd.isna(val) else float(val)
         clean_rows.append(parsed)
+
     return clean_rows
 
 
@@ -153,5 +163,3 @@ def main(argv: List[str]) -> None:
 
 if __name__ == "__main__":
     main(sys.argv)
-
-

@@ -1,6 +1,24 @@
 import sys
+import csv
 from typing import Dict, List, Tuple
-from utils import read_dataset
+
+
+def read_dataset(path: str) -> Tuple[List[str], List[Dict[str, str]]]:
+    """Read a CSV file and return the header and rows."""
+    with open(path, newline="", encoding="utf-8") as f:
+        try:
+            reader = csv.reader(f)
+            header = next(reader)
+        except Exception:
+            return [], []
+
+        rows: List[Dict[str, str]] = []
+        for row in reader:
+            if not row or len(row) != len(header):
+                continue
+            # append a dictionary containing the header as keys and the rows values as values
+            rows.append({header[i]: row[i] for i in range(len(header))})
+    return header, rows
 
 
 def load_predictions(path: str) -> Dict[int, str]:

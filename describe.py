@@ -1,5 +1,5 @@
 import pandas as pd
-import describe_helpers as dh
+import utils as ut
 import sys
 
 
@@ -8,12 +8,12 @@ def compute_column_stats(df_column):
     column = df_column.dropna()
     missing = len(df_column) - len(column)
     count = len(column)
-    mean = dh.mean_(column)
-    qrtl1, qrtl3 = dh.quartile_(column)
-    std = dh.std_(column)
-    min = dh.min_(column)
-    max = dh.max_(column)
-    median = dh.median_(column)
+    mean = ut.mean_(column)
+    qrtl1, qrtl3 = ut.quartile_(column)
+    std = ut.std_(column)
+    min = ut.min_(column)
+    max = ut.max_(column)
+    median = ut.median_(column)
     value_range = max - min
     variance = std ** 2
     return [

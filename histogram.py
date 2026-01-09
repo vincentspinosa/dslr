@@ -1,8 +1,7 @@
 import sys
 import matplotlib.pyplot as plt
-from typing import Dict, List
-
-from utils import is_float, read_dataset
+import pandas as pd
+from typing import Dict, List, Optional
 
 COURSE_COLUMNS: List[str] = [
     "Arithmancy",
@@ -32,16 +31,26 @@ HOUSES_COLORS: Dict[str, str] = {
 HOUSES: List[str] = list(HOUSES_COLORS.keys())
 
 
-def load_course_scores(path: str) -> Dict[str, Dict[str, List[float]]] | None:
+def load_course_scores(path: str) -> Optional[Dict[str, Dict[str, List[float]]]]:
     """
-    Read the CSV at `path` and build a nested dictionary:
+    Read the CSV at `path` using pandas and build a nested dictionary:
 
         data[course][house] -> list of float scores
 
     Only numeric scores are kept; missing / non-numeric values are ignored.
     """
-    header, rows = read_dataset(path)
-    if not header:
+    try:
+        df = pd.read_csv(path)
+    except Exception:
+        return None
+    
+    if df.empty:
+        return None
+
+    # Filter to only rows with valid houses
+    df = df[df["Hogwarts House"].isin(HOUSES)]
+    
+    if df.empty:
         return None
 
     data: Dict[str, Dict[str, List[float]]] = {
@@ -49,15 +58,17 @@ def load_course_scores(path: str) -> Dict[str, Dict[str, List[float]]] | None:
         for course in COURSE_COLUMNS
     }
 
-    for row in rows:
-        house = row.get("Hogwarts House", "")
-        if house not in HOUSES:
+    for course in COURSE_COLUMNS:
+        if course not in df.columns:
             continue
-        for course in COURSE_COLUMNS:
-            val = row.get(course, "").strip()
-            if val == "" or not is_float(val):
-                continue
-            data[course][house].append(float(val))
+        for house in HOUSES:
+            # Filter by house and get numeric values for this course
+            house_data = df[df["Hogwarts House"] == house][course]
+            # Drop NaN values and convert to list
+            numeric_values = house_data.dropna().tolist()
+            # Filter out any remaining non-numeric values (shouldn't happen but safety check)
+            data[course][house] = [v for v in numeric_values if isinstance(v, (int, float))]
+    
     return data
 
 

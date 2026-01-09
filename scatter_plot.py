@@ -3,8 +3,9 @@ import math
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
-from utils import compute_stats, is_float, read_dataset
+from utils import compute_stats_as_dict
 
 
 COURSE_COLUMNS: List[str] = [
@@ -48,8 +49,8 @@ def compute_pearson(x: List[float], y: List[float]) -> float:
         # If there are no values, or the lists are misaligned, return 0 by convention.
         return 0.0
     # Use our manual stats function for means and standard deviations
-    stats_x = compute_stats(x)  # contains mean and std for X values
-    stats_y = compute_stats(y)  # contains mean and std for Y values
+    stats_x = compute_stats_as_dict(x)  # contains mean and std for X values
+    stats_y = compute_stats_as_dict(y)  # contains mean and std for Y values
     mean_x = stats_x["mean"]  # mean of X
     mean_y = stats_y["mean"]  # mean of Y
     std_x = stats_x["std"]  # standard deviation of X
@@ -73,50 +74,42 @@ def compute_pearson(x: List[float], y: List[float]) -> float:
 
 def plot_best_pair(path: str) -> None:
     """
-    Find the pair of features with the largest absolute Pearson correlation,
+    Find the pair of features with the largest Pearson correlation using pandas,
     print the pair and its correlation, and display a scatter plot colored
     by house.
     """
-    header, rows = read_dataset(path)
-    if not header:
+    try:
+        df = pd.read_csv(path)
+    except Exception:
+        print("Could not read dataset.")
+        return
+
+    if df.empty:
         print("Empty dataset.")
         return
+
+    # Keep only numeric course columns and drop rows where both values are NaN
+    numeric_df = df[COURSE_COLUMNS].apply(pd.to_numeric, errors="coerce")
 
     # Best feature pair and correlation score found so far
     best_c1 = ""
     best_c2 = ""
     best_r = 0.0
 
-    # Prepare per-feature lists with NaNs for missing values, aligned per row index
-    values_per_feature: Dict[str, List[float]] = {c: [] for c in COURSE_COLUMNS}
-    for row in rows:
-        for c in COURSE_COLUMNS:
-            val = row.get(c, "").strip()
-            if val == "" or not is_float(val):
-                # Missing values are stored as NaN to keep alignment across features
-                values_per_feature[c].append(float("nan"))
-            else:
-                values_per_feature[c].append(float(val))
-
-    m = len(rows)  # number of observations
     # Try all pairs of course features
     for i in range(len(COURSE_COLUMNS)):
         for j in range(i + 1, len(COURSE_COLUMNS)):
-            x_values: List[float] = []
-            y_values: List[float] = []
-            # Collect only rows where both features are present
-            for k in range(m):
-                if not math.isnan(values_per_feature[COURSE_COLUMNS[i]][k]) \
-                    and not math.isnan(values_per_feature[COURSE_COLUMNS[j]][k]):
-                    x_values.append(values_per_feature[COURSE_COLUMNS[i]][k])
-                    y_values.append(values_per_feature[COURSE_COLUMNS[j]][k])
-            if len(x_values) < 2:
-                # Need at least two points to calculate a correlation
+            c1 = COURSE_COLUMNS[i]
+            c2 = COURSE_COLUMNS[j]
+            pair_df = numeric_df[[c1, c2]].dropna()
+            if len(pair_df) < 2:
                 continue
+            x_values = pair_df[c1].tolist()
+            y_values = pair_df[c2].tolist()
             r = compute_pearson(x_values, y_values)
             # Keep the pair with the strongest linear relationship
             if r > best_r:
-                best_c1, best_c2, best_r = COURSE_COLUMNS[i], COURSE_COLUMNS[j], r
+                best_c1, best_c2, best_r = c1, c2, r
 
     if best_c1 == "" or best_c2 == "":
         print("Could not find a suitable pair of features.")
@@ -127,27 +120,29 @@ def plot_best_pair(path: str) -> None:
         f"(Pearson r = {best_r:.4f})"
     )
 
-    # Build per-house coordinates for plotting
+    # Build per-house coordinates for plotting using pandas filtering
     house_points: Dict[str, Tuple[List[float], List[float]]] = {
         house: ([], []) for house in HOUSES_COLORS.keys()
     }
-    for row in rows:
-        house = row.get("Hogwarts House", "")
-        if house not in HOUSES_COLORS:
+
+    # Ensure House column exists
+    if "Hogwarts House" not in df.columns:
+        print("Column 'Hogwarts House' not found in dataset.")
+        return
+
+    # Use numeric data for the chosen best pair
+    pair_df = df[["Hogwarts House", best_c1, best_c2]].copy()
+    pair_df[best_c1] = pd.to_numeric(pair_df[best_c1], errors="coerce")
+    pair_df[best_c2] = pd.to_numeric(pair_df[best_c2], errors="coerce")
+    pair_df = pair_df.dropna(subset=[best_c1, best_c2])
+
+    for house in HOUSES_COLORS.keys():
+        subset = pair_df[pair_df["Hogwarts House"] == house]
+        if subset.empty:
             continue
-        x_val = row.get(best_c1, "").strip()
-        y_val = row.get(best_c2, "").strip()
-        if (
-            x_val == ""
-            or y_val == ""
-            or not is_float(x_val)
-            or not is_float(y_val)
-        ):
-            continue
-        x_value, y_value = float(x_val), float(y_val)
-        x_values, y_values = house_points[house]
-        x_values.append(x_value)
-        y_values.append(y_value)
+        x_list = subset[best_c1].tolist()
+        y_list = subset[best_c2].tolist()
+        house_points[house] = (x_list, y_list)
 
     # Draw the scatter plot
     plt.figure(figsize=(8, 6))
