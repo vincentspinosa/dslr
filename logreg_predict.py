@@ -111,12 +111,12 @@ def predict(
     return predictions
 
 
-def write_predictions(indices: List[int], houses: List[str], path: str) -> None:
+def write_predictions(indices: List[int], predictions: List[str], path: str) -> None:
     """Write predictions to a CSV file. """
     try:
         with open(path, "w", encoding="utf-8") as f:
             f.write("Index,Hogwarts House\n")
-            for idx, house in zip(indices, houses):
+            for idx, house in zip(indices, predictions):
                 f.write(f"{idx},{house}\n")
     except Exception as e:
         print(f"Error writing predictions: {e}")
