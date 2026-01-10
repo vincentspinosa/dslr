@@ -108,7 +108,7 @@ def prepare_dataset(
             features.append((v - means[j]) / stds[j])
         X.append(features)
 
-    return X, labels, means, stds  # Return standardized features, labels, and statistics for later use
+    return X, labels, means, stds
 
 
 def sigmoid(z: float) -> float:
@@ -254,9 +254,7 @@ def train_one_vs_all(
         elif algorithm == "sgd":
             weights[k] = _train_sgd(X, y_binary, learning_rate, num_iterations)
         elif algorithm == "minibatch" or algorithm == "mini-batch":
-            weights[k] = _train_minibatch(
-                X, y_binary, learning_rate, num_iterations, batch_size
-            )
+            weights[k] = _train_minibatch(X, y_binary, learning_rate, num_iterations, batch_size)
         else:
             raise ValueError(f"Unknown training algorithm: {algorithm}")
 
