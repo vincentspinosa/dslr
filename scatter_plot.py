@@ -85,27 +85,22 @@ def plot_best_pair(path: str) -> None:
         print("Empty dataset.")
         return
 
-    # Keep only numeric course columns and drop rows where values are NaN
-    numeric_df = df[COURSE_COLUMNS].apply(pd.to_numeric, errors="coerce")
-    numeric_df = numeric_df.dropna(how="all")
+    columns_df = df[COURSE_COLUMNS]
 
-    # Init best feature pair and correlation score
     best_c1 = ""
     best_c2 = ""
     best_r = 0.0
 
-    # Try all pairs of course features
     for i in range(len(COURSE_COLUMNS)):
         for j in range(i + 1, len(COURSE_COLUMNS)):
             c1 = COURSE_COLUMNS[i]
             c2 = COURSE_COLUMNS[j]
-            pair_df = numeric_df[[c1, c2]].dropna()
+            pair_df = columns_df[[c1, c2]].dropna()
             if len(pair_df) < 2:
                 continue
             x_values = pair_df[c1].tolist()
             y_values = pair_df[c2].tolist()
             r = compute_pearson(x_values, y_values)
-            # Keep the pair with the strongest linear relationship
             if r > best_r:
                 best_c1, best_c2, best_r = c1, c2, r
 
@@ -123,7 +118,6 @@ def plot_best_pair(path: str) -> None:
         house: ([], []) for house in HOUSES_COLORS.keys()
     }
 
-    # Ensure House column exists
     if "Hogwarts House" not in df.columns:
         print("Column 'Hogwarts House' not found in dataset.")
         return
@@ -138,7 +132,6 @@ def plot_best_pair(path: str) -> None:
         y_list = subset[best_c2].tolist()
         house_points[house] = (x_list, y_list)
 
-    # Draw the scatter plot
     plt.figure(figsize=(8, 6))
     for house, color in HOUSES_COLORS.items():
         x_values, y_values = house_points[house]
