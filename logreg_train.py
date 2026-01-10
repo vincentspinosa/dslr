@@ -64,6 +64,9 @@ def prepare_dataset(
     if "Arithmancy" in df.columns:
         df = df.drop(columns=["Arithmancy"])
 
+    if "Potions" in df.columns:
+        df = df.drop(columns=["Potions"])
+
     # Ensure all course columns exist and are numeric (non-numeric -> NaN)
     for col in COURSE_COLUMNS:
         if col in df.columns:

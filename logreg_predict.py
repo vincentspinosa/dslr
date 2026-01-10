@@ -149,6 +149,9 @@ def main(argv: List[str]) -> None:
         if "Arithmancy" in df.columns:
             df = df.drop(columns=["Arithmancy"])
 
+        if "Potions" in df.columns:
+            df = df.drop(columns=["Potions"])
+
         # Transform rows into standardized feature vectors
         X, indices = prepare_features(df, feature_names, means, stds)
         preds = predict(X, weights, houses)
