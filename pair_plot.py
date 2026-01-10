@@ -53,10 +53,9 @@ def build_clean_rows(path: str) -> List[Dict[str, float | None]]:
 
     clean_rows: List[Dict[str, float | None]] = []
     for _, row in df.iterrows():
-        parsed: Dict[str, float | None] = {"Hogwarts House": row["Hogwarts House"]}
-        for col in COURSE_COLUMNS:
-            parsed[col] = float(row[col])
-        clean_rows.append(parsed)
+        parsed_row: Dict[str, float] = {"Hogwarts House": row["Hogwarts House"]}
+        parsed_row.update({col: float(row[col]) for col in COURSE_COLUMNS})
+        clean_rows.append(parsed_row)
 
     return clean_rows
 
